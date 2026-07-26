@@ -27,6 +27,7 @@ def get_db_connection():
     return conn
 
 # 3. عرض صفحة الموقع الرئيسية (index.html) مباشرة من السيرفر
+@app.head("/")
 @app.get("/")
 def read_root():
     return FileResponse("index.html")
