@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة النتيجة الذكية - الإصدار الاحترافي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f0fdf4;
+            background-image: radial-gradient(circle at 100% 0%, #dcfce7 0%, transparent 30%), 
+                              radial-gradient(circle at 0% 100%, #ccfbf1 0%, transparent 30%);
+            background-attachment: fixed;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-10 px-4 sm:px-6 text-slate-800 relative">
+
+    <header class="text-center mb-8 animate-fade-in w-full max-w-4xl">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 mb-4 shadow-sm border border-emerald-200">
+            <i class="fa-solid fa-graduation-cap text-2xl"></i>
+        </div>
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-3 drop-shadow-sm">بوابة نتائج الطلاب</h1>
+        <p class="text-slate-500 max-w-lg mx-auto text-sm md:text-base">ابحث برقم الجلوس أو استعرض أوائل المدرسة والإدارة.</p>
+    </header>
+
+    <!-- صندوق البحث الأساسي -->
+    <div class="w-full max-w-4xl glass-panel rounded-3xl shadow-lg p-3 mb-3 flex flex-col md:flex-row relative z-10 animate-fade-in gap-3">
+        <select id="searchType" class="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-slate-700 outline-none font-bold md:w-1/4">
+            <option value="student">بحث عن طالب</option>
+            <option value="school">أوائل مدرسة</option>
+            <option value="admin">أوائل إدارة</option> <!-- خيار الإدارة الجديد -->
+        </select>
+
+        <div class="relative flex-grow">
+            <i class="fa-solid fa-magnifying-glass absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="searchInput" placeholder="اكتب رقم الجلوس أو اسم الإدارة/المدرسة هنا..." 
+                   class="w-full pr-12 pl-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-0 text-base text-slate-700 placeholder-slate-400 outline-none">
+        </div>
+
+        <button onclick="triggerSearch(1)" id="searchBtn"
+                class="bg-gradient-to-l from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 px-8 rounded-2xl shadow-md transition-all flex items-center justify-center gap-2">
+            <span>بحث</span>
+        </button>
+    </div>
+
+    <!-- شريط أدوات الترتيب -->
+    <div class="w-full max-w-4xl flex justify-start mb-6 z-10 animate-fade-in px-2">
+        <div class="flex items-center gap-2 bg-white/70 backdrop-blur-md px-4 py-2 rounded-2xl shadow-sm border border-emerald-100">
+            <i class="fa-solid fa-arrow-down-a-z text-emerald-600"></i>
+            <label for="sortBy" class="text-sm font-bold text-slate-600">ترتيب النتائج:</label>
+            <select id="sortBy" onchange="if(document.getElementById('searchInput').value.trim() !== '') triggerSearch(1)" 
+                    class="bg-transparent border-none text-emerald-700 outline-none font-bold text-sm cursor-pointer hover:text-teal-600 transition">
+                <option value="highest_total">المجموع: الأعلى أولاً</option>
+                <option value="lowest_total">المجموع: الأقل أولاً</option>
+                <option value="name_az">الاسم: أ - ي</option>
+                <option value="name_za">الاسم: ي - أ</option>
+                <option value="seating_asc">رقم الجلوس تصاعدي</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- الإشعارات والتحميل -->
+    <div id="searchStats" class="hidden mb-4 text-emerald-700 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold animate-fade-in"></div>
+    <div id="loading" class="hidden flex-col items-center justify-center mt-8 space-y-3">
+        <div class="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+        <p class="text-emerald-600 font-semibold">جاري معالجة البيانات...</p>
+    </div>
+    <div id="errorMsg" class="hidden mt-4 w-full max-w-md bg-red-50 border-r-4 border-red-500 p-4 rounded-xl shadow-sm text-red-700 text-sm font-semibold animate-fade-in text-center"></div>
+
+    <!-- شبكة النتائج -->
+    <div id="cardsGrid" class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-4"></div>
+    <div id="paginationControls" class="w-full flex justify-center items-center gap-2 mt-8 mb-12 flex-wrap"></div>
+
+    <!-- النافذة المنبثقة للتفاصيل (Modal) -->
+    <div id="detailsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 transition-opacity opacity-0">
+        <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl transform scale-95 transition-all overflow-hidden flex flex-col max-h-[90vh]" id="modalContent">
+            
+            <div id="modalHeader" class="p-6 text-white relative">
+                <button onclick="closeModal()" class="absolute top-4 left-4 w-8 h-8 z-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="flex justify-between items-start">
+                    <div class="pl-2">
+                        <h2 id="modalStudentName" class="text-xl md:text-2xl font-bold mb-2"></h2>
+                        <p class="text-sm opacity-90 mb-1"><i class="fa-regular fa-id-card ml-1 w-4"></i>رقم الجلوس: <span id="modalSeatNo" class="font-bold"></span></p>
+                        
+                        <!-- إضافة الإدارة التعليمية هنا -->
+                        <p class="text-sm opacity-90 truncate max-w-[250px] mb-1">
+                            <i class="fa-solid fa-building-columns ml-1 w-4"></i>
+                            <span id="modalAdmin" class="cursor-pointer hover:underline hover:text-white transition-all font-semibold" onclick="searchByAdmin(this.innerText)"></span>
+                        </p>
+                        
+                        <p class="text-sm opacity-90 truncate max-w-[250px]">
+                            <i class="fa-solid fa-school ml-1 w-4"></i>
+                            <span id="modalSchool" class="cursor-pointer hover:underline hover:text-white transition-all" onclick="searchBySchool(this.innerText)"></span>
+                        </p>
+                    </div>
+                    <div class="text-center bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/20 shadow-sm ml-10 mt-1">
+                        <span class="block text-[11px] font-bold uppercase tracking-wider opacity-90 mb-1">النسبة المئوية</span>
+                        <span id="modalPercentage" class="text-2xl font-black font-mono"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-100 px-6 py-4 border-b border-slate-200">
+                <p class="text-xs font-bold text-slate-500 mb-2">الترتيب:</p>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-white p-2 rounded-xl text-center shadow-sm border border-slate-100">
+                        <span class="block text-[10px] text-slate-400 font-bold">المدرسة</span>
+                        <span id="rankSchool" class="font-black text-lg text-slate-700">-</span>
+                    </div>
+                    <div class="bg-white p-2 rounded-xl text-center shadow-sm border border-slate-100">
+                        <span class="block text-[10px] text-slate-400 font-bold">الإدارة</span>
+                        <span id="rankAdmin" class="font-black text-lg text-slate-700">-</span>
+                    </div>
+                    <div class="bg-white p-2 rounded-xl text-center shadow-sm border border-emerald-200" id="rankGovBox">
+                        <span class="block text-[10px] text-emerald-600 font-bold" id="rankGovLabel">المحافظة</span>
+                        <span id="rankGov" class="font-black text-lg text-emerald-700">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-grow bg-slate-50">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-slate-700"><i class="fa-solid fa-clipboard-list ml-2 text-teal-500"></i>تفاصيل الدرجات</h3>
+                    <span id="modalStatus" class="px-3 py-1 rounded-full text-xs font-bold"></span>
+                </div>
+                <div id="modalGradesList" class="space-y-2"></div>
+            </div>
+
+            <div class="bg-white p-5 border-t border-slate-100 flex justify-between items-center">
+                <span class="text-slate-500 font-semibold">المجموع الكلي (من 280):</span>
+                <span id="modalTotalScore" class="text-3xl font-black"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentQuery = "";
+        let currentResults = [];
+
+        function triggerSearch() { searchResult(1); }
+
+        // دالة للبحث السريع عن الإدارة بالضغط
+        function searchByAdmin(adminName) {
+            if (!adminName || adminName === 'غير متوفر') return;
+            closeModal();
+            document.getElementById('searchType').value = 'admin';
+            document.getElementById('searchInput').value = adminName;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            triggerSearch(1);
+        }
+
+        // دالة للبحث السريع عن المدرسة بالضغط
+        function searchBySchool(schoolName) {
+            if (!schoolName || schoolName === 'غير متوفر') return;
+            closeModal();
+            document.getElementById('searchType').value = 'school';
+            document.getElementById('searchInput').value = schoolName;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            triggerSearch(1);
+        }
+
+        async function searchResult(page) {
+            currentQuery = document.getElementById('searchInput').value.trim();
+            const searchType = document.getElementById('searchType').value;
+            const sortBy = document.getElementById('sortBy').value;
+            if (!currentQuery) return;
+
+            const cardsGrid = document.getElementById('cardsGrid');
+            const paginationControls = document.getElementById('paginationControls');
+            const loading = document.getElementById('loading');
+            const errorMsg = document.getElementById('errorMsg');
+            const searchStats = document.getElementById('searchStats');
+
+            cardsGrid.innerHTML = '';
+            paginationControls.innerHTML = '';
+            searchStats.classList.add('hidden');
+            loading.classList.remove('hidden');
+            loading.classList.add('flex');
+            errorMsg.classList.add('hidden');
+
+            try {
+                // بدلاً من السطر القديم اللي فيه 127.0.0.1، حط ده:
+const response = await fetch(`/search?q=${encodeURIComponent(currentQuery)}&search_type=${searchType}&sort_by=${sortBy}&page=${page}&limit=6`);
+                loading.classList.add('hidden');
+                loading.classList.remove('flex');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentResults = data.results;
+                    
+                    if (data.search_type === 'seating') {
+                        searchStats.innerText = "تم العثور على النتيجة برقم الجلوس.";
+                        renderCards(currentResults);
+                        openModal(0);
+                    } else if(data.search_type === 'school') {
+                        searchStats.innerText = `أوائل المدرسة (${data.total_results.toLocaleString('ar-EG')} طالب متاح).`;
+                        renderCards(currentResults);
+                        renderPagination(data.current_page, data.total_pages);
+                    } else if(data.search_type === 'admin') {
+                        searchStats.innerText = `أوائل الإدارة (${data.total_results.toLocaleString('ar-EG')} طالب متاح).`;
+                        renderCards(currentResults);
+                        renderPagination(data.current_page, data.total_pages);
+                    } else {
+                        searchStats.innerText = `تم العثور على ${data.total_results.toLocaleString('ar-EG')} طالب مطابق.`;
+                        renderCards(currentResults);
+                        renderPagination(data.current_page, data.total_pages);
+                    }
+                    searchStats.classList.remove('hidden');
+                } else {
+                    errorMsg.innerText = "لا توجد بيانات متطابقة. تأكد من الكلمات وحاول مرة أخرى.";
+                    errorMsg.classList.remove('hidden');
+                }
+            } catch (error) {
+                loading.classList.add('hidden');
+                loading.classList.remove('flex');
+                errorMsg.innerText = "تعذر الاتصال بالسيرفر.";
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        function renderCards(students) {
+            const cardsGrid = document.getElementById('cardsGrid');
+            students.forEach((student, index) => {
+                const statusVal = student['الحالة'] || '';
+                const isFailed = statusVal.trim() !== 'ناجح' && statusVal !== '';
+                const totalScore = parseFloat(student['مجموع كلى']) || 0;
+                const percentage = ((totalScore / 280) * 100).toFixed(1);
+
+                const cardBg = isFailed ? 'bg-red-50 hover:border-red-200 border-red-100' : 'bg-white hover:border-teal-200 border-slate-100';
+                const nameColor = isFailed ? 'text-red-900 group-hover:text-red-600' : 'text-slate-800 group-hover:text-teal-600';
+                const scoreColor = isFailed ? 'text-red-600' : 'text-teal-600';
+                const btnClass = isFailed ? 'bg-red-100 text-red-700 group-hover:bg-red-600 group-hover:text-white' : 'bg-teal-50 text-teal-600 group-hover:bg-teal-500 group-hover:text-white';
+
+                const card = document.createElement('div');
+                card.className = `${cardBg} p-5 rounded-2xl shadow-sm hover:shadow-xl border transition-all duration-300 cursor-pointer group flex flex-col justify-between animate-fade-in`;
+                card.style.animationDelay = `${index * 0.05}s`;
+                card.onclick = () => openModal(index);
+                
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <h2 class="text-lg font-bold ${nameColor} transition leading-tight">${student['اسم الطالب']}</h2>
+                        </div>
+                        <div class="text-sm text-slate-500 space-y-1">
+                            <p><i class="fa-regular fa-id-card ml-1 w-4"></i><span class="font-semibold text-slate-700">${student['رقم الجلوس']}</span></p>
+                            
+                            <!-- الإدارة التعليمية قابلة للضغط -->
+                            <p class="truncate cursor-pointer hover:text-teal-600 transition-all font-semibold" onclick="event.stopPropagation(); searchByAdmin('${student['اسم الادارة']}')">
+                                <i class="fa-solid fa-building-columns ml-1 w-4"></i>${student['اسم الادارة'] || 'غير متوفر'}
+                            </p>
+                            
+                            <!-- المدرسة قابلة للضغط -->
+                            <p class="truncate cursor-pointer hover:text-teal-600 transition-all" onclick="event.stopPropagation(); searchBySchool('${student['اسم المدرسة']}')">
+                                <i class="fa-solid fa-school ml-1 w-4"></i>${student['اسم المدرسة'] || 'غير متوفر'}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-100/50 flex justify-between items-center">
+                        <div>
+                            <span class="text-xs text-slate-400 block">المجموع | النسبة</span>
+                            <span class="font-extrabold text-xl ${scoreColor}">${student['مجموع كلى']} <span class="text-sm text-slate-400">(${percentage}%)</span></span>
+                        </div>
+                        <div class="${btnClass} px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                            التفاصيل <i class="fa-solid fa-arrow-left-long ml-1 text-[10px]"></i>
+                        </div>
+                    </div>
+                `;
+                cardsGrid.appendChild(card);
+            });
+        }
+
+        async function openModal(index) {
+            const student = currentResults[index];
+            if (!student) return;
+
+            const statusVal = student['الحالة'] || 'ناجح';
+            const isFailed = statusVal.trim() !== 'ناجح' && statusVal !== '';
+            const totalScore = parseFloat(student['مجموع كلى']) || 0;
+            const percentage = ((totalScore / 280) * 100).toFixed(1);
+
+            const modalHeader = document.getElementById('modalHeader');
+            const modalStatus = document.getElementById('modalStatus');
+            const modalTotalScore = document.getElementById('modalTotalScore');
+            const rankGovBox = document.getElementById('rankGovBox');
+            const rankGovLabel = document.getElementById('rankGovLabel');
+            const rankGov = document.getElementById('rankGov');
+
+            if(isFailed) {
+                modalHeader.className = "p-6 text-white relative bg-gradient-to-r from-red-600 to-rose-600";
+                modalStatus.className = "px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200";
+                modalTotalScore.className = "text-3xl font-black text-red-600";
+                rankGovBox.className = "bg-white p-2 rounded-xl text-center shadow-sm border border-red-200";
+                rankGovLabel.className = "block text-[10px] text-red-600 font-bold";
+                rankGov.className = "font-black text-lg text-red-700";
+            } else {
+                modalHeader.className = "p-6 text-white relative bg-gradient-to-r from-emerald-600 to-teal-600";
+                modalStatus.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200";
+                modalTotalScore.className = "text-3xl font-black text-teal-600";
+                rankGovBox.className = "bg-white p-2 rounded-xl text-center shadow-sm border border-emerald-200";
+                rankGovLabel.className = "block text-[10px] text-emerald-600 font-bold";
+                rankGov.className = "font-black text-lg text-emerald-700";
+            }
+
+            document.getElementById('modalStudentName').innerText = student['اسم الطالب'];
+            document.getElementById('modalSeatNo').innerText = student['رقم الجلوس'];
+            document.getElementById('modalAdmin').innerText = student['اسم الادارة'] || 'غير متوفر';
+            document.getElementById('modalSchool').innerText = student['اسم المدرسة'] || 'غير متوفر';
+            document.getElementById('modalStatus').innerText = statusVal;
+            document.getElementById('modalTotalScore').innerText = student['مجموع كلى'];
+            document.getElementById('modalPercentage').innerText = percentage + "%";
+
+            document.getElementById('rankSchool').innerHTML = '<i class="fa-solid fa-spinner fa-spin text-slate-300"></i>';
+            document.getElementById('rankAdmin').innerHTML = '<i class="fa-solid fa-spinner fa-spin text-slate-300"></i>';
+            document.getElementById('rankGov').innerHTML = `<i class="fa-solid fa-spinner fa-spin ${isFailed ? 'text-red-300' : 'text-emerald-300'}"></i>`;
+
+            const gradesList = document.getElementById('modalGradesList');
+            gradesList.innerHTML = '';
+            
+            // تم إضافة حقول الترتيب لقائمة الاستثناء هنا لعدم ظهورها وسط المواد
+            const excludedKeys = ['كود ادارة', 'اسم الادارة', 'كود مدرسة', 'اسم المدرسة', 'رقم الجلوس', 'اسم الطالب', 'مجموع كلى', 'الحالة', 'مواد الدور الثانى والتكميلى', 'gov_rank', 'admin_rank', 'school_rank'];
+            
+            for (const [key, value] of Object.entries(student)) {
+                if (!excludedKeys.includes(key) && value !== null && value !== "") {
+                    gradesList.innerHTML += `
+                        <div class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 hover:border-${isFailed ? 'red' : 'teal'}-100 transition">
+                            <span class="text-sm font-semibold text-slate-600">${key}</span>
+                            <span class="text-base font-bold text-slate-900 bg-slate-50 px-3 py-1 rounded-lg">${value}</span>
+                        </div>
+                    `;
+                }
+            }
+
+            const modal = document.getElementById('detailsModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+
+            try {
+                const rankRes = await fetch(`/ranks/${student['رقم الجلوس']}`);
+                if(rankRes.ok) {
+                    const ranks = await rankRes.json();
+                    document.getElementById('rankSchool').innerText = ranks.school_rank;
+                    document.getElementById('rankAdmin').innerText = ranks.admin_rank;
+                    document.getElementById('rankGov').innerText = ranks.gov_rank;
+                }
+            } catch(e) { console.log(e); }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('detailsModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        document.getElementById('detailsModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        function renderPagination(currentPage, totalPages) {
+            const paginationControls = document.getElementById('paginationControls');
+            if (totalPages <= 1) return;
+
+            if(currentPage > 1) {
+                paginationControls.innerHTML += `<button onclick="searchResult(${currentPage - 1})" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200 transition shadow-sm"><i class="fa-solid fa-chevron-right"></i></button>`;
+            }
+            paginationControls.innerHTML += `<span class="px-4 py-2 text-sm font-bold text-slate-500">صفحة ${currentPage} من ${totalPages}</span>`;
+            if(currentPage < totalPages) {
+                paginationControls.innerHTML += `<button onclick="searchResult(${currentPage + 1})" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200 transition shadow-sm"><i class="fa-solid fa-chevron-left"></i></button>`;
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') triggerSearch();
+        });
+    </script>
+</body>
+</html>
