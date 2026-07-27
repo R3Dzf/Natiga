@@ -5,16 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>بوابة نتيجة الشهادة الاعدادية</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Aref+Ruqaa:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        @font-face {
+            font-family: 'CustomThuluth';
+            src: url('/static/thuluth.ttf') format('truetype'); 
+        }
+        
+        .preload-font {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+            font-family: 'CustomThuluth';
+        }
+        
         body {
             font-family: 'Cairo', sans-serif;
             background-color: #f0fdf4;
             background-image: radial-gradient(circle at 100% 0%, #dcfce7 0%, transparent 30%), 
                               radial-gradient(circle at 0% 100%, #ccfbf1 0%, transparent 30%);
             background-attachment: fixed;
+            overflow-x: hidden; 
         }
+        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
@@ -25,6 +44,16 @@
             backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
+        
+        /* إخفاء السكرول بار المزعج في التبويبات والموبايل */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -32,6 +61,8 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-10 px-4 sm:px-6 text-slate-800 relative">
+    
+    <div class="preload-font">تفعيل الخط الملكي</div>
 
     <header class="text-center mb-8 animate-fade-in w-full max-w-4xl">
         <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 mb-4 shadow-sm border border-emerald-200">
@@ -39,14 +70,18 @@
         </div>
         <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-3 drop-shadow-sm">بوابة نتائج الطلاب</h1>
         <p class="text-slate-500 max-w-lg mx-auto text-sm md:text-base">ابحث برقم الجلوس أو استعرض أوائل المدرسة والإدارة.</p>
+        
+        <button onclick="openStatsModal()" class="mt-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-emerald-600 font-bold py-2.5 px-6 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 mx-auto">
+            <i class="fa-solid fa-chart-pie text-emerald-500"></i>
+            <span>إحصائيات المحافظة الشاملة</span>
+        </button>
     </header>
 
-    <!-- صندوق البحث الأساسي -->
     <div class="w-full max-w-4xl glass-panel rounded-3xl shadow-lg p-3 mb-3 flex flex-col md:flex-row relative z-10 animate-fade-in gap-3">
         <select id="searchType" class="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-slate-700 outline-none font-bold md:w-1/4">
             <option value="student">بحث عن طالب</option>
             <option value="school">أوائل مدرسة</option>
-            <option value="admin">أوائل إدارة</option> <!-- خيار الإدارة الجديد -->
+            <option value="admin">أوائل إدارة</option> 
         </select>
 
         <div class="relative flex-grow">
@@ -55,18 +90,17 @@
                    class="w-full pr-12 pl-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-0 text-base text-slate-700 placeholder-slate-400 outline-none">
         </div>
 
-        <button onclick="triggerSearch(1)" id="searchBtn"
+        <button onclick="triggerSearch()" id="searchBtn"
                 class="bg-gradient-to-l from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 px-8 rounded-2xl shadow-md transition-all flex items-center justify-center gap-2">
             <span>بحث</span>
         </button>
     </div>
 
-    <!-- شريط أدوات الترتيب -->
     <div class="w-full max-w-4xl flex justify-start mb-6 z-10 animate-fade-in px-2">
         <div class="flex items-center gap-2 bg-white/70 backdrop-blur-md px-4 py-2 rounded-2xl shadow-sm border border-emerald-100">
             <i class="fa-solid fa-arrow-down-a-z text-emerald-600"></i>
             <label for="sortBy" class="text-sm font-bold text-slate-600">ترتيب النتائج:</label>
-            <select id="sortBy" onchange="if(document.getElementById('searchInput').value.trim() !== '') triggerSearch(1)" 
+            <select id="sortBy" onchange="if(document.getElementById('searchInput').value.trim() !== '') triggerSearch()" 
                     class="bg-transparent border-none text-emerald-700 outline-none font-bold text-sm cursor-pointer hover:text-teal-600 transition">
                 <option value="highest_total">المجموع: الأعلى أولاً</option>
                 <option value="lowest_total">المجموع: الأقل أولاً</option>
@@ -77,45 +111,114 @@
         </div>
     </div>
 
-    <!-- الإشعارات والتحميل -->
-    <div id="searchStats" class="hidden mb-4 text-emerald-700 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200 text-sm font-semibold animate-fade-in"></div>
+    <div id="searchStats" class="hidden mb-4 text-emerald-700 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 text-sm font-semibold animate-fade-in w-full max-w-5xl"></div>
     <div id="loading" class="hidden flex-col items-center justify-center mt-8 space-y-3">
         <div class="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
         <p class="text-emerald-600 font-semibold">جاري معالجة البيانات...</p>
     </div>
     <div id="errorMsg" class="hidden mt-4 w-full max-w-md bg-red-50 border-r-4 border-red-500 p-4 rounded-xl shadow-sm text-red-700 text-sm font-semibold animate-fade-in text-center"></div>
 
-    <!-- شبكة النتائج -->
     <div id="cardsGrid" class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-4"></div>
     <div id="paginationControls" class="w-full flex justify-center items-center gap-2 mt-8 mb-12 flex-wrap"></div>
 
-    <!-- النافذة المنبثقة للتفاصيل (Modal) -->
-    <div id="detailsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 transition-opacity opacity-0">
-        <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl transform scale-95 transition-all overflow-hidden flex flex-col max-h-[90vh]" id="modalContent">
-            
-            <div id="modalHeader" class="p-6 text-white relative">
-                <button onclick="closeModal()" class="absolute top-4 left-4 w-8 h-8 z-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition">
+    <!-- نافذة الإحصائيات الفردية (مدرسة أو إدارة) -->
+    <div id="specificStatsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-[60] transition-opacity opacity-0">
+        <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl transform scale-95 transition-all overflow-hidden flex flex-col" id="specificStatsContent">
+            <div class="p-6 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-chart-pie text-emerald-500 ml-2"></i>إحصائيات <span id="specificStatsTitle"></span></h2>
+                <button onclick="closeSpecificStats()" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition text-slate-600">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
-                <div class="flex justify-between items-start">
-                    <div class="pl-2">
-                        <h2 id="modalStudentName" class="text-xl md:text-2xl font-bold mb-2"></h2>
+            </div>
+            <div class="p-6" id="specificStatsBody">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-50 border border-slate-100 p-4 rounded-2xl text-center">
+                        <span class="block text-xs font-bold text-slate-500 mb-1">إجمالي الطلاب</span>
+                        <span id="ssCount" class="text-2xl font-black text-slate-800">-</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-100 p-4 rounded-2xl text-center">
+                        <span class="block text-xs font-bold text-slate-500 mb-1">متوسط المجاميع</span>
+                        <span id="ssAvg" class="text-2xl font-black text-slate-800">-</span>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl text-center col-span-2">
+                        <span class="block text-xs font-bold text-emerald-600 mb-1">نسبة النجاح العامة</span>
+                        <span id="ssRate" class="text-3xl font-black text-emerald-700" dir="ltr">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة الإحصائيات الشاملة بنظام التبويبات -->
+    <div id="statsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 transition-opacity opacity-0">
+        <div class="bg-white rounded-3xl w-full max-w-3xl shadow-2xl transform scale-95 transition-all overflow-hidden flex flex-col max-h-[90vh]" id="statsContent">
+            <div class="p-6 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
+                <h2 class="text-2xl font-bold text-slate-800"><i class="fa-solid fa-chart-simple text-emerald-500 ml-2"></i>الإحصائيات الشاملة</h2>
+                <button onclick="closeStatsModal()" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition text-slate-600">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-grow" id="statsLoading">
+                <div class="flex flex-col items-center justify-center py-10">
+                    <i class="fa-solid fa-circle-notch fa-spin text-4xl text-emerald-500 mb-3"></i>
+                    <p class="font-bold text-slate-500">جاري جلب الإحصائيات...</p>
+                </div>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-grow hidden flex-col" id="statsData">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 shrink-0">
+                    <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl text-center">
+                        <span class="block text-xs font-bold text-emerald-600 mb-1">إجمالي الطلاب</span>
+                        <span id="statTotal" class="text-2xl font-black text-slate-800">-</span>
+                    </div>
+                    <div class="bg-teal-50 border border-teal-100 p-4 rounded-2xl text-center">
+                        <span class="block text-xs font-bold text-teal-600 mb-1">الناجحون</span>
+                        <span id="statPassed" class="text-2xl font-black text-slate-800">-</span>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-100 p-4 rounded-2xl text-center col-span-2 md:col-span-1">
+                        <span class="block text-xs font-bold text-amber-600 mb-1">نسبة النجاح</span>
+                        <span id="statRate" class="text-2xl font-black text-slate-800" dir="ltr">-</span>
+                    </div>
+                </div>
+
+                <div class="flex border-b border-slate-200 mb-4 shrink-0 overflow-x-auto hide-scrollbar">
+                    <button onclick="switchTab('topStudents')" id="tabBtn-topStudents" class="px-5 py-3 text-sm font-bold border-b-2 border-emerald-500 text-emerald-600 whitespace-nowrap transition-colors">أوائل المحافظة</button>
+                    <button onclick="switchTab('admins')" id="tabBtn-admins" class="px-5 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap transition-colors">الإدارات التعليمية</button>
+                    <button onclick="switchTab('schools')" id="tabBtn-schools" class="px-5 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap transition-colors">جميع المدارس</button>
+                </div>
+
+                <div id="tab-topStudents" class="tab-content space-y-2 pb-4"></div>
+                <div id="tab-admins" class="tab-content space-y-2 hidden pb-4"></div>
+                <div id="tab-schools" class="tab-content space-y-2 hidden pb-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- النافذة المنبثقة لدرجات الطالب -->
+    <div id="detailsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-opacity opacity-0">
+        <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl transform scale-95 transition-all overflow-hidden flex flex-col max-h-[90vh]" id="modalContent">
+            <div id="modalHeader" class="p-6 text-white relative">
+                <div class="flex justify-between items-start gap-4">
+                    <div class="flex-grow">
+                        <h2 id="modalStudentName" class="text-xl md:text-2xl font-bold mb-2 leading-tight"></h2>
                         <p class="text-sm opacity-90 mb-1"><i class="fa-regular fa-id-card ml-1 w-4"></i>رقم الجلوس: <span id="modalSeatNo" class="font-bold"></span></p>
-                        
-                        <!-- إضافة الإدارة التعليمية هنا -->
-                        <p class="text-sm opacity-90 truncate max-w-[250px] mb-1">
+                        <p class="text-sm opacity-90 truncate max-w-[200px] sm:max-w-xs mb-1">
                             <i class="fa-solid fa-building-columns ml-1 w-4"></i>
                             <span id="modalAdmin" class="cursor-pointer hover:underline hover:text-white transition-all font-semibold" onclick="searchByAdmin(this.innerText)"></span>
                         </p>
-                        
-                        <p class="text-sm opacity-90 truncate max-w-[250px]">
+                        <p class="text-sm opacity-90 truncate max-w-[200px] sm:max-w-xs">
                             <i class="fa-solid fa-school ml-1 w-4"></i>
                             <span id="modalSchool" class="cursor-pointer hover:underline hover:text-white transition-all" onclick="searchBySchool(this.innerText)"></span>
                         </p>
                     </div>
-                    <div class="text-center bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/20 shadow-sm ml-10 mt-1">
-                        <span class="block text-[11px] font-bold uppercase tracking-wider opacity-90 mb-1">النسبة المئوية</span>
-                        <span id="modalPercentage" class="text-2xl font-black font-mono"></span>
+                    <div class="flex items-start gap-2 shrink-0">
+                        <button id="viewCertBtnTop" onclick="previewCertificate()" class="h-8 px-3 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 flex items-center justify-center transition text-sm font-bold shadow-md text-amber-900 hidden gap-1.5 border border-amber-300/50 whitespace-nowrap">
+                            <i class="fa-solid fa-award"></i><span>الشهادة</span>
+                        </button>
+                        <button onclick="closeModal(true)" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition shrink-0">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -146,44 +249,100 @@
                 <div id="modalGradesList" class="space-y-2"></div>
             </div>
 
-            <div class="bg-white p-5 border-t border-slate-100 flex justify-between items-center">
-                <span class="text-slate-500 font-semibold">المجموع الكلي (من 280):</span>
-                <span id="modalTotalScore" class="text-3xl font-black"></span>
+            <div class="bg-slate-50 p-5 border-t border-slate-200 flex justify-between items-center rounded-b-3xl">
+                <div>
+                    <span class="block text-xs font-bold text-slate-500 mb-1">المجموع الكلي</span>
+                    <div class="flex items-baseline gap-1">
+                        <span id="modalTotalScore" class="text-3xl font-black"></span>
+                        <span class="text-sm text-slate-400 font-bold">/ 280</span>
+                    </div>
+                </div>
+                <div class="text-center bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
+                    <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">النسبة</span>
+                    <span id="modalPercentage" class="text-2xl font-black font-mono"></span>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- نافذة معاينة الشهادة -->
+    <div id="certPreviewModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md hidden flex-col items-center justify-center p-4 z-50 transition-opacity opacity-0">
+        <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-all" id="certPreviewContent">
+            
+            <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="font-bold text-slate-700 text-lg"><i class="fa-solid fa-award ml-2 text-amber-500"></i>معاينة الشهادة</h3>
+                <button onclick="closeCertPreview()" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center transition text-slate-600">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 bg-slate-100 flex justify-center items-center overflow-hidden relative min-h-[300px]">
+                <div id="certLoading" class="absolute inset-0 flex flex-col items-center justify-center text-amber-600 bg-slate-100 z-10">
+                    <i class="fa-solid fa-circle-notch fa-spin text-4xl mb-3"></i>
+                    <p class="font-bold mt-2">جاري رسم الشهادة...</p>
+                </div>
+                <img id="certPreviewImage" src="" alt="شهادة التقدير" class="max-w-full max-h-[60vh] object-contain rounded-lg shadow-md border border-slate-200 hidden relative z-20">
+            </div>
+            
+            <div class="p-5 bg-white flex justify-center gap-3">
+                <button onclick="closeCertPreview()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-xl transition-all flex items-center gap-2">
+                    رجوع
+                </button>
+                <button onclick="downloadActualCertificate()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-download"></i> تحميل الشهادة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- استدعاء الجافاسكريبت -->
     <script>
+        const subjectsConfig = {
+            "عربى": { max: 80, pass: 40 },
+            "انجليزى": { max: 60, pass: 30 },
+            "رياضيات": { max: 60, pass: 30 },
+            "علوم": { max: 40, pass: 20 },
+            "دراسات": { max: 40, pass: 20 }
+        };
+
         let currentQuery = "";
         let currentResults = [];
+        let currentPageNum = 1;
+        window.currentModalStudent = null;
 
-        function triggerSearch() { searchResult(1); }
+        function triggerSearch() { searchResult(1, true); }
 
-        // دالة للبحث السريع عن الإدارة بالضغط
         function searchByAdmin(adminName) {
             if (!adminName || adminName === 'غير متوفر') return;
-            closeModal();
+            closeModal(false); 
             document.getElementById('searchType').value = 'admin';
             document.getElementById('searchInput').value = adminName;
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            triggerSearch(1);
+            triggerSearch();
         }
 
-        // دالة للبحث السريع عن المدرسة بالضغط
         function searchBySchool(schoolName) {
             if (!schoolName || schoolName === 'غير متوفر') return;
-            closeModal();
+            closeModal(false);
             document.getElementById('searchType').value = 'school';
             document.getElementById('searchInput').value = schoolName;
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            triggerSearch(1);
+            triggerSearch();
         }
 
-        async function searchResult(page) {
+        async function searchResult(page, pushToHistory = true) {
             currentQuery = document.getElementById('searchInput').value.trim();
             const searchType = document.getElementById('searchType').value;
             const sortBy = document.getElementById('sortBy').value;
+            currentPageNum = page;
+
             if (!currentQuery) return;
+
+            if (pushToHistory) {
+                history.pushState({
+                    view: 'search', query: currentQuery, searchType: searchType, sortBy: sortBy, page: page
+                }, "", `?q=${encodeURIComponent(currentQuery)}&type=${searchType}&page=${page}`);
+            }
 
             const cardsGrid = document.getElementById('cardsGrid');
             const paginationControls = document.getElementById('paginationControls');
@@ -199,8 +358,7 @@
             errorMsg.classList.add('hidden');
 
             try {
-                // بدلاً من السطر القديم اللي فيه 127.0.0.1، حط ده:
-const response = await fetch(`/search?q=${encodeURIComponent(currentQuery)}&search_type=${searchType}&sort_by=${sortBy}&page=${page}&limit=6`);
+                const response = await fetch(`/search?q=${encodeURIComponent(currentQuery)}&search_type=${searchType}&sort_by=${sortBy}&page=${page}&limit=6`);
                 loading.classList.add('hidden');
                 loading.classList.remove('flex');
 
@@ -209,25 +367,33 @@ const response = await fetch(`/search?q=${encodeURIComponent(currentQuery)}&sear
                     currentResults = data.results;
                     
                     if (data.search_type === 'seating') {
-                        searchStats.innerText = "تم العثور على النتيجة برقم الجلوس.";
+                        searchStats.innerHTML = "تم العثور على النتيجة برقم الجلوس.";
                         renderCards(currentResults);
-                        openModal(0);
+                        openModal(0, true); 
                     } else if(data.search_type === 'school') {
-                        searchStats.innerText = `أوائل المدرسة (${data.total_results.toLocaleString('ar-EG')} طالب متاح).`;
+                        searchStats.innerHTML = `
+                            <div class="flex items-center justify-between w-full">
+                                <span>أوائل المدرسة (${data.total_results.toLocaleString('ar-EG')} طالب متاح).</span>
+                                <button onclick="openSpecificStats('school', '${currentQuery}')" class="bg-emerald-100 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg hover:bg-emerald-200 transition text-xs font-bold flex items-center gap-1.5"><i class="fa-solid fa-chart-pie"></i> إحصائيات المدرسة</button>
+                            </div>`;
                         renderCards(currentResults);
                         renderPagination(data.current_page, data.total_pages);
                     } else if(data.search_type === 'admin') {
-                        searchStats.innerText = `أوائل الإدارة (${data.total_results.toLocaleString('ar-EG')} طالب متاح).`;
+                        searchStats.innerHTML = `
+                            <div class="flex items-center justify-between w-full">
+                                <span>أوائل الإدارة (${data.total_results.toLocaleString('ar-EG')} طالب متاح).</span>
+                                <button onclick="openSpecificStats('admin', '${currentQuery}')" class="bg-emerald-100 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg hover:bg-emerald-200 transition text-xs font-bold flex items-center gap-1.5"><i class="fa-solid fa-chart-pie"></i> إحصائيات الإدارة</button>
+                            </div>`;
                         renderCards(currentResults);
                         renderPagination(data.current_page, data.total_pages);
                     } else {
-                        searchStats.innerText = `تم العثور على ${data.total_results.toLocaleString('ar-EG')} طالب مطابق.`;
+                        searchStats.innerHTML = `تم العثور على ${data.total_results.toLocaleString('ar-EG')} طالب مطابق.`;
                         renderCards(currentResults);
                         renderPagination(data.current_page, data.total_pages);
                     }
                     searchStats.classList.remove('hidden');
                 } else {
-                    errorMsg.innerText = "لا توجد بيانات متطابقة. تأكد من الكلمات وحاول مرة أخرى.";
+                    errorMsg.innerText = "لا توجد بيانات متطابقة.";
                     errorMsg.classList.remove('hidden');
                 }
             } catch (error) {
@@ -254,7 +420,7 @@ const response = await fetch(`/search?q=${encodeURIComponent(currentQuery)}&sear
                 const card = document.createElement('div');
                 card.className = `${cardBg} p-5 rounded-2xl shadow-sm hover:shadow-xl border transition-all duration-300 cursor-pointer group flex flex-col justify-between animate-fade-in`;
                 card.style.animationDelay = `${index * 0.05}s`;
-                card.onclick = () => openModal(index);
+                card.onclick = () => openModal(index, true); 
                 
                 card.innerHTML = `
                     <div>
@@ -263,16 +429,8 @@ const response = await fetch(`/search?q=${encodeURIComponent(currentQuery)}&sear
                         </div>
                         <div class="text-sm text-slate-500 space-y-1">
                             <p><i class="fa-regular fa-id-card ml-1 w-4"></i><span class="font-semibold text-slate-700">${student['رقم الجلوس']}</span></p>
-                            
-                            <!-- الإدارة التعليمية قابلة للضغط -->
-                            <p class="truncate cursor-pointer hover:text-teal-600 transition-all font-semibold" onclick="event.stopPropagation(); searchByAdmin('${student['اسم الادارة']}')">
-                                <i class="fa-solid fa-building-columns ml-1 w-4"></i>${student['اسم الادارة'] || 'غير متوفر'}
-                            </p>
-                            
-                            <!-- المدرسة قابلة للضغط -->
-                            <p class="truncate cursor-pointer hover:text-teal-600 transition-all" onclick="event.stopPropagation(); searchBySchool('${student['اسم المدرسة']}')">
-                                <i class="fa-solid fa-school ml-1 w-4"></i>${student['اسم المدرسة'] || 'غير متوفر'}
-                            </p>
+                            <p class="truncate"><span class="cursor-pointer hover:text-teal-600 transition-all font-semibold" onclick="event.stopPropagation(); searchByAdmin('${student['اسم الادارة']}')"><i class="fa-solid fa-building-columns ml-1 w-4"></i>${student['اسم الادارة'] || 'غير متوفر'}</span></p>
+                            <p class="truncate"><span class="cursor-pointer hover:text-teal-600 transition-all" onclick="event.stopPropagation(); searchBySchool('${student['اسم المدرسة']}')"><i class="fa-solid fa-school ml-1 w-4"></i>${student['اسم المدرسة'] || 'غير متوفر'}</span></p>
                         </div>
                     </div>
                     <div class="mt-4 pt-4 border-t border-slate-100/50 flex justify-between items-center">
@@ -280,18 +438,23 @@ const response = await fetch(`/search?q=${encodeURIComponent(currentQuery)}&sear
                             <span class="text-xs text-slate-400 block">المجموع | النسبة</span>
                             <span class="font-extrabold text-xl ${scoreColor}">${student['مجموع كلى']} <span class="text-sm text-slate-400">(${percentage}%)</span></span>
                         </div>
-                        <div class="${btnClass} px-3 py-1.5 rounded-lg text-xs font-bold transition">
-                            التفاصيل <i class="fa-solid fa-arrow-left-long ml-1 text-[10px]"></i>
-                        </div>
+                        <div class="${btnClass} px-3 py-1.5 rounded-lg text-xs font-bold transition">التفاصيل <i class="fa-solid fa-arrow-left-long ml-1 text-[10px]"></i></div>
                     </div>
                 `;
                 cardsGrid.appendChild(card);
             });
         }
 
-        async function openModal(index) {
+        async function openModal(index, pushToHistory = true) {
             const student = currentResults[index];
             if (!student) return;
+            
+            window.currentModalStudent = student;
+            document.body.style.overflow = 'hidden';
+
+            if (pushToHistory) {
+                history.pushState({ view: 'modal', studentIndex: index }, "", `?student=${student['رقم الجلوس']}`);
+            }
 
             const statusVal = student['الحالة'] || 'ناجح';
             const isFailed = statusVal.trim() !== 'ناجح' && statusVal !== '';
@@ -301,24 +464,32 @@ const response = await fetch(`/search?q=${encodeURIComponent(currentQuery)}&sear
             const modalHeader = document.getElementById('modalHeader');
             const modalStatus = document.getElementById('modalStatus');
             const modalTotalScore = document.getElementById('modalTotalScore');
+            const modalPercentage = document.getElementById('modalPercentage');
             const rankGovBox = document.getElementById('rankGovBox');
             const rankGovLabel = document.getElementById('rankGovLabel');
             const rankGov = document.getElementById('rankGov');
+            const viewCertBtnTop = document.getElementById('viewCertBtnTop');
 
             if(isFailed) {
                 modalHeader.className = "p-6 text-white relative bg-gradient-to-r from-red-600 to-rose-600";
                 modalStatus.className = "px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200";
                 modalTotalScore.className = "text-3xl font-black text-red-600";
+                modalPercentage.className = "text-2xl font-black font-mono text-red-600";
                 rankGovBox.className = "bg-white p-2 rounded-xl text-center shadow-sm border border-red-200";
                 rankGovLabel.className = "block text-[10px] text-red-600 font-bold";
                 rankGov.className = "font-black text-lg text-red-700";
+                viewCertBtnTop.classList.add('hidden');
+                viewCertBtnTop.classList.remove('flex');
             } else {
                 modalHeader.className = "p-6 text-white relative bg-gradient-to-r from-emerald-600 to-teal-600";
                 modalStatus.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200";
                 modalTotalScore.className = "text-3xl font-black text-teal-600";
+                modalPercentage.className = "text-2xl font-black font-mono text-teal-600";
                 rankGovBox.className = "bg-white p-2 rounded-xl text-center shadow-sm border border-emerald-200";
                 rankGovLabel.className = "block text-[10px] text-emerald-600 font-bold";
                 rankGov.className = "font-black text-lg text-emerald-700";
+                viewCertBtnTop.classList.remove('hidden');
+                viewCertBtnTop.classList.add('flex');
             }
 
             document.getElementById('modalStudentName').innerText = student['اسم الطالب'];
@@ -336,15 +507,29 @@ const response = await fetch(`/search?q=${encodeURIComponent(currentQuery)}&sear
             const gradesList = document.getElementById('modalGradesList');
             gradesList.innerHTML = '';
             
-            // تم إضافة حقول الترتيب لقائمة الاستثناء هنا لعدم ظهورها وسط المواد
             const excludedKeys = ['كود ادارة', 'اسم الادارة', 'كود مدرسة', 'اسم المدرسة', 'رقم الجلوس', 'اسم الطالب', 'مجموع كلى', 'الحالة', 'مواد الدور الثانى والتكميلى', 'gov_rank', 'admin_rank', 'school_rank'];
             
             for (const [key, value] of Object.entries(student)) {
                 if (!excludedKeys.includes(key) && value !== null && value !== "") {
+                    let displayValue = value;
+                    let rowClass = `flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 hover:border-${isFailed ? 'red' : 'teal'}-100 transition`;
+                    let valueClass = "text-base font-bold text-slate-900 bg-slate-50 px-3 py-1 rounded-lg";
+                    let keyClass = "text-sm font-semibold text-slate-600";
+
+                    if (subjectsConfig[key]) {
+                        const mark = parseFloat(value);
+                        displayValue = `<span dir="ltr">${value} / ${subjectsConfig[key].max}</span>`;
+                        if (!isNaN(mark) && mark < subjectsConfig[key].pass) {
+                            rowClass = "flex justify-between items-center p-3 bg-red-50 rounded-xl border border-red-200 transition";
+                            valueClass = "text-base font-bold text-red-700 bg-red-100 px-3 py-1 rounded-lg";
+                            keyClass = "text-sm font-semibold text-red-700";
+                        }
+                    }
+
                     gradesList.innerHTML += `
-                        <div class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 hover:border-${isFailed ? 'red' : 'teal'}-100 transition">
-                            <span class="text-sm font-semibold text-slate-600">${key}</span>
-                            <span class="text-base font-bold text-slate-900 bg-slate-50 px-3 py-1 rounded-lg">${value}</span>
+                        <div class="${rowClass}">
+                            <span class="${keyClass}">${key}</span>
+                            <span class="${valueClass}">${displayValue}</span>
                         </div>
                     `;
                 }
@@ -366,16 +551,53 @@ const response = await fetch(`/search?q=${encodeURIComponent(currentQuery)}&sear
             } catch(e) { console.log(e); }
         }
 
-        function closeModal() {
+        function closeModal(pushToHistory = true) {
             const modal = document.getElementById('detailsModal');
             const content = document.getElementById('modalContent');
             modal.classList.add('opacity-0');
             content.classList.add('scale-95');
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
+
+            document.body.style.overflow = '';
+            window.currentModalStudent = null;
+
+            if (pushToHistory) {
+                history.pushState({
+                    view: 'search', query: currentQuery, searchType: document.getElementById('searchType').value,
+                    sortBy: document.getElementById('sortBy').value, page: currentPageNum
+                }, "", `?q=${encodeURIComponent(currentQuery)}&type=${document.getElementById('searchType').value}&page=${currentPageNum}`);
+            }
         }
 
         document.getElementById('detailsModal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
+            if (e.target === this) closeModal(true);
+        });
+
+        window.addEventListener('popstate', (event) => {
+            const certModal = document.getElementById('certPreviewModal');
+            if (!certModal.classList.contains('hidden')) {
+                if(typeof closeCertPreview === 'function') closeCertPreview();
+                return;
+            }
+
+            const state = event.state;
+            if (state) {
+                if (state.view === 'modal') {
+                    openModal(state.studentIndex, false);
+                } else if (state.view === 'search') {
+                    closeModal(false);
+                    document.getElementById('searchInput').value = state.query;
+                    document.getElementById('searchType').value = state.searchType;
+                    document.getElementById('sortBy').value = state.sortBy;
+                    searchResult(state.page, false);
+                }
+            } else {
+                closeModal(false);
+                document.getElementById('cardsGrid').innerHTML = '';
+                document.getElementById('paginationControls').innerHTML = '';
+                document.getElementById('searchStats').classList.add('hidden');
+                document.getElementById('searchInput').value = '';
+            }
         });
 
         function renderPagination(currentPage, totalPages) {
@@ -383,17 +605,214 @@ const response = await fetch(`/search?q=${encodeURIComponent(currentQuery)}&sear
             if (totalPages <= 1) return;
 
             if(currentPage > 1) {
-                paginationControls.innerHTML += `<button onclick="searchResult(${currentPage - 1})" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200 transition shadow-sm"><i class="fa-solid fa-chevron-right"></i></button>`;
+                paginationControls.innerHTML += `<button onclick="searchResult(${currentPage - 1}, true)" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200 transition shadow-sm"><i class="fa-solid fa-chevron-right"></i></button>`;
             }
             paginationControls.innerHTML += `<span class="px-4 py-2 text-sm font-bold text-slate-500">صفحة ${currentPage} من ${totalPages}</span>`;
             if(currentPage < totalPages) {
-                paginationControls.innerHTML += `<button onclick="searchResult(${currentPage + 1})" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200 transition shadow-sm"><i class="fa-solid fa-chevron-left"></i></button>`;
+                paginationControls.innerHTML += `<button onclick="searchResult(${currentPage + 1}, true)" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200 transition shadow-sm"><i class="fa-solid fa-chevron-left"></i></button>`;
             }
         }
 
         document.getElementById('searchInput').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') triggerSearch();
         });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const q = urlParams.get('q');
+            const type = urlParams.get('type');
+            const page = parseInt(urlParams.get('page')) || 1;
+            const studentSeat = urlParams.get('student');
+
+            if (q && type) {
+                document.getElementById('searchInput').value = q;
+                document.getElementById('searchType').value = type;
+                
+                searchResult(page, false).then(() => {
+                    if (studentSeat) {
+                        const studentIndex = currentResults.findIndex(s => s['رقم الجلوس'] == studentSeat);
+                        if (studentIndex !== -1) openModal(studentIndex, false);
+                    }
+                });
+            } else if (studentSeat) {
+                document.getElementById('searchType').value = 'student';
+                document.getElementById('searchInput').value = studentSeat;
+                
+                searchResult(1, false).then(() => {
+                    if (currentResults.length > 0) openModal(0, false);
+                });
+            }
+        });
+
+        // ==========================================
+        // أكواد نافذة الإحصائيات الفردية
+        // ==========================================
+        async function openSpecificStats(type, name) {
+            const modal = document.getElementById('specificStatsModal');
+            const content = document.getElementById('specificStatsContent');
+            
+            document.getElementById('specificStatsTitle').innerText = name;
+            document.getElementById('ssCount').innerText = '...';
+            document.getElementById('ssAvg').innerText = '...';
+            document.getElementById('ssRate').innerText = '...';
+
+            modal.classList.remove('hidden');
+            setTimeout(() => { 
+                modal.classList.remove('opacity-0'); 
+                content.classList.remove('scale-95'); 
+            }, 10);
+
+            try {
+                const res = await fetch(`/stats/specific?entity_type=${type}&name=${encodeURIComponent(name)}`);
+                if(res.ok) {
+                    const data = await res.json();
+                    document.getElementById('ssCount').innerText = data.student_count.toLocaleString('ar-EG');
+                    document.getElementById('ssAvg').innerText = data.avg_score;
+                    document.getElementById('ssRate').innerText = data.success_rate + '%';
+                } else {
+                    document.getElementById('ssCount').innerText = 'غير متوفر';
+                    document.getElementById('ssAvg').innerText = 'غير متوفر';
+                    document.getElementById('ssRate').innerText = 'غير متوفر';
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function closeSpecificStats() {
+            const modal = document.getElementById('specificStatsModal');
+            const content = document.getElementById('specificStatsContent');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        // ==========================================
+        // أكواد نافذة الإحصائيات الشاملة والتبويبات
+        // ==========================================
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            
+            document.querySelectorAll('[id^="tabBtn-"]').forEach(btn => {
+                btn.classList.remove('border-emerald-500', 'text-emerald-600');
+                btn.classList.add('border-transparent', 'text-slate-500');
+            });
+            const activeBtn = document.getElementById(`tabBtn-${tabName}`);
+            activeBtn.classList.remove('border-transparent', 'text-slate-500');
+            activeBtn.classList.add('border-emerald-500', 'text-emerald-600');
+        }
+
+        async function openStatsModal() {
+            const modal = document.getElementById('statsModal');
+            const content = document.getElementById('statsContent');
+            const loading = document.getElementById('statsLoading');
+            const dataView = document.getElementById('statsData');
+            
+            document.body.style.overflow = 'hidden';
+            modal.classList.remove('hidden');
+            
+            setTimeout(() => { 
+                modal.classList.remove('opacity-0'); 
+                content.classList.remove('scale-95'); 
+            }, 10);
+
+            if (!dataView.classList.contains('hidden')) return;
+
+            try {
+                const response = await fetch('/stats/general');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    document.getElementById('statTotal').innerText = data.total_students.toLocaleString('ar-EG');
+                    document.getElementById('statPassed').innerText = data.passed_students.toLocaleString('ar-EG');
+                    document.getElementById('statRate').innerText = data.success_rate + '%';
+
+                    // 1. أوائل المحافظة
+                    const topStudentsList = document.getElementById('tab-topStudents');
+                    topStudentsList.innerHTML = '';
+                    data.top_students.forEach((student, index) => {
+                        // تعريف متغير جديد بينضف رقم الجلوس ويشيل منه أي كسور أو .0
+                        const cleanSeatNo = parseInt(student.seat_no);
+                        
+                        topStudentsList.innerHTML += `
+                            <div class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:border-emerald-200 transition" onclick="closeStatsModal(); document.getElementById('searchType').value='student'; document.getElementById('searchInput').value='${cleanSeatNo}'; triggerSearch();">
+                                <div class="flex items-center gap-3 w-2/3">
+                                    <div class="w-8 h-8 rounded-full ${index < 10 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'} font-bold flex items-center justify-center text-xs shrink-0">${index + 1}</div>
+                                    <div class="truncate">
+                                        <span class="block font-bold text-sm text-slate-800 truncate">${student.name}</span>
+                                        <span class="block text-xs text-slate-400 truncate">${student.school_name} - ${student.admin_name}</span>
+                                    </div>
+                                </div>
+                                <div class="bg-emerald-50 px-3 py-1 rounded-lg text-emerald-700 font-bold text-sm shrink-0" dir="ltr">${student.score}</div>
+                            </div>
+                        `;
+                    });
+
+                    // 2. كل الإدارات (تم حل مشكلة التسمية هنا)
+                    const adminsList = document.getElementById('tab-admins');
+                    adminsList.innerHTML = '';
+                    data.top_admins.forEach((admin, index) => {
+                        adminsList.innerHTML += `
+                            <div class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                                <div class="flex items-center gap-3 w-1/2">
+                                    <div class="w-8 h-8 rounded-full ${index < 3 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'} font-bold flex items-center justify-center text-xs shrink-0">${index + 1}</div>
+                                    <span class="font-bold text-sm text-slate-700 cursor-pointer hover:text-emerald-600 transition truncate" onclick="closeStatsModal(); searchByAdmin('${admin.admin_name}')">${admin.admin_name}</span>
+                                </div>
+                                <div class="flex gap-2 text-xs shrink-0">
+                                    <div class="text-center px-2 border-l border-slate-100"><span class="block text-slate-400">الطلاب</span><span class="font-bold text-slate-600">${admin.student_count}</span></div>
+                                    <div class="text-center px-2 border-l border-slate-100"><span class="block text-slate-400">نجاح</span><span class="font-bold text-teal-600">${admin.success_rate}%</span></div>
+                                    <div class="text-center px-2"><span class="block text-slate-400">متوسط</span><span class="font-bold text-emerald-600">${admin.avg_score}</span></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    // 3. كل المدارس (تم حل مشكلة التسمية هنا)
+                    const schoolsList = document.getElementById('tab-schools');
+                    schoolsList.innerHTML = '';
+                    data.top_schools.forEach((school, index) => {
+                        schoolsList.innerHTML += `
+                            <div class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                                <div class="flex items-center gap-3 w-1/2">
+                                    <div class="w-8 h-8 rounded-full ${index < 5 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'} font-bold flex items-center justify-center text-xs shrink-0">${index + 1}</div>
+                                    <div class="truncate cursor-pointer hover:text-emerald-600 transition" onclick="closeStatsModal(); searchBySchool('${school.school_name}')">
+                                        <span class="block font-bold text-sm text-slate-700 truncate">${school.school_name}</span>
+                                        <span class="block text-[10px] text-slate-400 truncate">${school.admin_name}</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 text-[11px] shrink-0">
+                                    <div class="text-center px-2 border-l border-slate-100 hidden sm:block"><span class="block text-slate-400">الطلاب</span><span class="font-bold text-slate-600">${school.student_count}</span></div>
+                                    <div class="text-center px-2 border-l border-slate-100"><span class="block text-slate-400">نجاح</span><span class="font-bold text-teal-600">${school.success_rate}%</span></div>
+                                    <div class="text-center px-2"><span class="block text-slate-400">متوسط</span><span class="font-bold text-emerald-600">${school.avg_score}</span></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    loading.classList.add('hidden');
+                    dataView.classList.remove('hidden');
+                    dataView.classList.add('flex');
+                }
+            } catch (error) {
+                console.error("Failed to load stats:", error);
+                loading.innerHTML = '<p class="text-red-500 font-bold text-center">حدث خطأ أثناء تحميل البيانات.</p>';
+            }
+        }
+
+        function closeStatsModal() {
+            const modal = document.getElementById('statsModal');
+            const content = document.getElementById('statsContent');
+            
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => { 
+                modal.classList.add('hidden'); 
+                document.body.style.overflow = '';
+            }, 300);
+        }
     </script>
+    <script src="/static/certificate.js"></script>
 </body>
 </html>
