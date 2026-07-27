@@ -1,14 +1,15 @@
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import sqlite3
 import math
 from collections import Counter
 
-# 1. تعريف التطبيق (ده السطر اللي كان ناقص وعامل الخطأ!)
 app = FastAPI(title="Natiga Pro API")
 
-# 2. إعدادات CORS
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,19 +21,16 @@ app.add_middleware(
 DB_FILE = 'natiga.db'
 
 def get_db_connection():
-    # تفعيل WAL mode لتسريع قاعدة البيانات لو عليها ضغط
     conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     conn.execute('PRAGMA journal_mode=WAL;')
     conn.row_factory = sqlite3.Row
     return conn
 
-# 3. عرض صفحة الموقع الرئيسية (index.html) مباشرة من السيرفر
 @app.head("/")
 @app.get("/")
 def read_root():
     return FileResponse("index.html")
 
-# 4. مسار البحث الذكي
 @app.get("/search")
 def smart_search(
     q: str = Query(..., min_length=1), 
@@ -55,7 +53,6 @@ def smart_search(
     elif sort_by == "seating_asc":
         order_clause = ' ORDER BY CAST("رقم الجلوس" AS REAL) ASC'
 
-    # بحث أوائل مدرسة أو إدارة
     if search_type in ["school", "admin"]:
         column_name = '"اسم المدرسة"' if search_type == "school" else '"اسم الادارة"'
         words = q.split()
@@ -90,8 +87,6 @@ def smart_search(
             "current_page": page,
             "results": [dict(student) for student in students]
         }
-
-    # بحث عن طالب (بالاسم أو برقم الجلوس)
     else:
         if q.isdigit() and search_type == "student" and sort_by == "highest_total":
             cursor.execute('SELECT * FROM students WHERE "رقم الجلوس" = ? OR "رقم الجلوس" = ?', (q, int(q)))
@@ -134,7 +129,6 @@ def smart_search(
             "results": [dict(student) for student in students]
         }
 
-# 5. مسار جلب الترتيب (سريع جداً من الفهارس)
 @app.get("/ranks/{seating_no}")
 def get_ranks(seating_no: int):
     conn = get_db_connection()
@@ -156,3 +150,57 @@ def get_ranks(seating_no: int):
         "admin_rank": ranks["admin_rank"], 
         "school_rank": ranks["school_rank"]
     }
+
+@app.get("/stats/general")
+def get_general_stats():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('SELECT * FROM general_stats')
+        gen_row = cursor.fetchone()
+        if not gen_row:
+            raise HTTPException(status_code=404, detail="Stats not generated yet.")
+
+        cursor.execute('SELECT * FROM top_students')
+        top_students = [dict(row) for row in cursor.fetchall()]
+
+        cursor.execute('SELECT * FROM admins_stats')
+        admins = [dict(row) for row in cursor.fetchall()]
+
+        cursor.execute('SELECT * FROM schools_stats')
+        schools = [dict(row) for row in cursor.fetchall()]
+
+        return {
+            "total_students": gen_row["total_students"],
+            "passed_students": gen_row["passed_students"],
+            "success_rate": gen_row["success_rate"],
+            "top_students": top_students,
+            "top_admins": admins,
+            "top_schools": schools
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+# المسار الجديد لإحصائيات مدرسة أو إدارة محددة
+@app.get("/stats/specific")
+def get_specific_stats(entity_type: str, name: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        if entity_type == "admin":
+            cursor.execute('SELECT * FROM admins_stats WHERE admin_name = ?', (name,))
+        elif entity_type == "school":
+            cursor.execute('SELECT * FROM schools_stats WHERE school_name = ?', (name,))
+        else:
+            raise HTTPException(status_code=400, detail="Invalid type")
+            
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Stats not found")
+        return dict(row)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
