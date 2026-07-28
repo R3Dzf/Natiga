@@ -1,17 +1,17 @@
 import pandas as pd
 import sqlite3
+import os
 
-# اسم ملف الإكسيل بتاعك (تأكد إنه في نفس الفولدر)
-EXCEL_FILE = 'data.xlsx'
+# اسم الملف المضغوط اللي فيه الـ CSV
+ZIP_FILE = 'data.zip'
 DB_FILE = 'natiga.db'
 
 def build_database():
-    print("جاري قراءة ملف الإكسيل...")
-    # لو ماعندكش المكتبة دي اكتب في التيرمينال: pip install pandas openpyxl
-    df = pd.read_excel(EXCEL_FILE)
+    print("جاري قراءة الملف المضغوط...")
+    # قراءة الملف من الـ zip مباشرة لتوفير الرامات
+    df = pd.read_csv(ZIP_FILE, compression='zip', encoding='utf-8-sig')
 
     print("جاري تهيئة البيانات وتسمية الأعمدة لتطابق المنصة...")
-    # ربط أعمدة الإكسيل الجديد بالأعمدة اللي السيرفر متعود عليها
     df.rename(columns={
         'seating_no': 'رقم الجلوس',
         'arabic_name': 'اسم الطالب',
@@ -19,14 +19,14 @@ def build_database():
         'student_case_desc': 'الحالة'
     }, inplace=True)
 
-    # إنشاء أعمدة وهمية للإدارة والمدرسة لمنع أخطاء السيرفر
+    # إضافة أعمدة وهمية للإدارة والمدرسة لمنع أخطاء السيرفر
     df['اسم المدرسة'] = 'غير متوفر'
     df['اسم الادارة'] = 'غير متوفر'
 
-    # تحويل المجموع لرقم وتجاهل النصوص الخاطئة
+    # تحويل المجموع لرقم
     df['مجموع كلى'] = pd.to_numeric(df['مجموع كلى'], errors='coerce')
     
-    # حساب ترتيب الطالب على الجمهورية
+    # حساب الترتيب على الجمهورية
     df['gov_rank'] = df['مجموع كلى'].rank(method='min', ascending=False).fillna(9999).astype(int)
     
     # تعطيل ترتيب المدرسة والإدارة
@@ -39,7 +39,7 @@ def build_database():
     print("جاري حفظ بيانات الطلاب في قاعدة البيانات...")
     df.to_sql('students', conn, if_exists='replace', index=False)
     
-    # إنشاء الفهارس لتسريع محرك البحث
+    # إنشاء الفهارس لتسريع البحث
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_seating ON students("رقم الجلوس")')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_name ON students("اسم الطالب")')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_total ON students("مجموع كلى")')
@@ -51,7 +51,7 @@ def build_database():
     cursor.execute('DROP TABLE IF EXISTS top_students')
     cursor.execute('CREATE TABLE top_students (seat_no TEXT, name TEXT, admin_name TEXT, school_name TEXT, score REAL)')
 
-    # الإحصائيات العامة (أي طالب حالته تحتوي على كلمة ناجح)
+    # الإحصائيات العامة
     cursor.execute('SELECT COUNT(*) FROM students')
     total = cursor.fetchone()[0]
     cursor.execute("SELECT COUNT(*) FROM students WHERE الحالة LIKE '%ناجح%'")
@@ -69,7 +69,7 @@ def build_database():
         LIMIT 15
     ''')
 
-    # تفريغ جداول الإدارات والمدارس وتهيئتها عشان السيرفر ميضربش 500 Error
+    # تفريغ جداول الإدارات والمدارس
     cursor.execute('DROP TABLE IF EXISTS admins_stats')
     cursor.execute('CREATE TABLE admins_stats (admin_name TEXT, student_count INTEGER, success_rate REAL, avg_score REAL)')
     cursor.execute('DROP TABLE IF EXISTS schools_stats')
@@ -77,7 +77,7 @@ def build_database():
 
     conn.commit()
     conn.close()
-    print("✅ تم بناء قاعدة البيانات والإحصائيات بنجاح! شغل السيرفر دلوقتي.")
+    print("✅ تم بناء قاعدة البيانات والإحصائيات بنجاح!")
 
 if __name__ == '__main__':
     build_database()
