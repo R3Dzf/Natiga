@@ -1,50 +1,56 @@
 import pandas as pd
 import sqlite3
-import os
 
-# اسم الملف المضغوط اللي فيه الـ CSV
+# اسم الملف المضغوط اللي رفعناه
 ZIP_FILE = 'data.zip'
 DB_FILE = 'natiga.db'
 
 def build_database():
-    print("جاري قراءة الملف المضغوط...")
-    # قراءة الملف من الـ zip مباشرة لتوفير الرامات
-    df = pd.read_csv(ZIP_FILE, compression='zip', encoding='utf-8-sig')
-
-    print("جاري تهيئة البيانات وتسمية الأعمدة لتطابق المنصة...")
-    df.rename(columns={
-        'seating_no': 'رقم الجلوس',
-        'arabic_name': 'اسم الطالب',
-        'total_degree': 'مجموع كلى',
-        'student_case_desc': 'الحالة'
-    }, inplace=True)
-
-    # إضافة أعمدة وهمية للإدارة والمدرسة لمنع أخطاء السيرفر
-    df['اسم المدرسة'] = 'غير متوفر'
-    df['اسم الادارة'] = 'غير متوفر'
-
-    # تحويل المجموع لرقم
-    df['مجموع كلى'] = pd.to_numeric(df['مجموع كلى'], errors='coerce')
-    
-    # حساب الترتيب على الجمهورية
-    df['gov_rank'] = df['مجموع كلى'].rank(method='min', ascending=False).fillna(9999).astype(int)
-    
-    # تعطيل ترتيب المدرسة والإدارة
-    df['admin_rank'] = 'N/A'
-    df['school_rank'] = 'N/A'
-
+    print("⏳ جاري قراءة الملف وتكوين قاعدة البيانات بدون استهلاك للرامات...")
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
 
-    print("جاري حفظ بيانات الطلاب في قاعدة البيانات...")
-    df.to_sql('students', conn, if_exists='replace', index=False)
+    # 1. قراءة الملف على دفعات (Chunks) كل دفعة 10 آلاف سطر
+    chunk_size = 10000
+    for i, chunk in enumerate(pd.read_csv(ZIP_FILE, compression='zip', encoding='utf-8-sig', chunksize=chunk_size)):
+        chunk.rename(columns={
+            'seating_no': 'رقم الجلوس',
+            'arabic_name': 'اسم الطالب',
+            'total_degree': 'مجموع كلى',
+            'student_case_desc': 'الحالة'
+        }, inplace=True)
+
+        chunk['اسم المدرسة'] = 'غير متوفر'
+        chunk['اسم الادارة'] = 'غير متوفر'
+        chunk['admin_rank'] = 'N/A'
+        chunk['school_rank'] = 'N/A'
+        
+        # تحويل المجموع لرقم
+        chunk['مجموع كلى'] = pd.to_numeric(chunk['مجموع كلى'], errors='coerce')
+
+        # حفظ الدفعة في الداتابيز (أول دفعة تنشئ الجدول، والباقي يضيف عليه)
+        if i == 0:
+            chunk.to_sql('students_raw', conn, if_exists='replace', index=False)
+        else:
+            chunk.to_sql('students_raw', conn, if_exists='append', index=False)
+        
+    print("✅ تم نقل جميع البيانات بنجاح! جاري حساب ترتيب الجمهورية...")
     
-    # إنشاء الفهارس لتسريع البحث
+    # 2. حساب ترتيب الجمهورية جوه الداتابيز نفسها (عشان نوفر رامات البايثون)
+    cursor.execute('DROP TABLE IF EXISTS students')
+    cursor.execute('''
+        CREATE TABLE students AS 
+        SELECT *, RANK() OVER (ORDER BY "مجموع كلى" DESC) as gov_rank 
+        FROM students_raw
+    ''')
+    cursor.execute('DROP TABLE students_raw')
+
+    # 3. إنشاء الفهارس لتسريع محرك البحث
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_seating ON students("رقم الجلوس")')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_name ON students("اسم الطالب")')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_total ON students("مجموع كلى")')
 
-    print("جاري تجهيز إحصائيات وأوائل الجمهورية...")
+    print("✅ جاري تجهيز إحصائيات وأوائل الجمهورية...")
     cursor.execute('DROP TABLE IF EXISTS general_stats')
     cursor.execute('CREATE TABLE general_stats (total_students INTEGER, passed_students INTEGER, success_rate REAL)')
     
@@ -69,7 +75,7 @@ def build_database():
         LIMIT 15
     ''')
 
-    # تفريغ جداول الإدارات والمدارس
+    # جداول فارغة للمدارس والإدارات لمنع انهيار السيرفر
     cursor.execute('DROP TABLE IF EXISTS admins_stats')
     cursor.execute('CREATE TABLE admins_stats (admin_name TEXT, student_count INTEGER, success_rate REAL, avg_score REAL)')
     cursor.execute('DROP TABLE IF EXISTS schools_stats')
@@ -77,7 +83,7 @@ def build_database():
 
     conn.commit()
     conn.close()
-    print("✅ تم بناء قاعدة البيانات والإحصائيات بنجاح!")
+    print("🚀 تم بناء قاعدة البيانات بالكامل وبنجاح تام!")
 
 if __name__ == '__main__':
     build_database()
