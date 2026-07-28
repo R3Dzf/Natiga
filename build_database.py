@@ -44,9 +44,10 @@ def build_database():
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_total ON students("مجموع كلى")')
 
     print("⚡ جاري تفعيل محرك البحث الصاروخي (FTS5)...")
-    # بناء محرك البحث المقلوب السريع جداً وربطه بجدول الطلاب
     cursor.execute('DROP TABLE IF EXISTS students_fts')
-    cursor.execute('CREATE VIRTUAL TABLE students_fts USING fts5(rowid UNINDEXED, name, tokenize="unicode61");')
+    # التعديل تم هنا: شيلنا rowid من الإنشاء
+    cursor.execute('CREATE VIRTUAL TABLE students_fts USING fts5(name, tokenize="unicode61");')
+    
     cursor.execute('''
         INSERT INTO students_fts (rowid, name)
         SELECT rowid, "اسم الطالب" FROM students
