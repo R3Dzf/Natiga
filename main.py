@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import sqlite3
 import math
-from collections import Counter
 
 app = FastAPI(title="Natiga Pro API")
 
@@ -22,7 +21,12 @@ DB_FILE = 'natiga.db'
 
 def get_db_connection():
     conn = sqlite3.connect(DB_FILE, check_same_thread=False)
+    # تفعيل أنظمة الكاش المتقدمة لتسريع القراءة أضعاف مضاعفة
     conn.execute('PRAGMA journal_mode=WAL;')
+    conn.execute('PRAGMA synchronous=NORMAL;')
+    conn.execute('PRAGMA cache_size=-64000;') # كاش 64 ميجا
+    conn.execute('PRAGMA temp_store=MEMORY;') # تخزين العمليات في الرامات
+    conn.execute('PRAGMA mmap_size=268435456;') # تسريع الوصول للبيانات
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -53,17 +57,13 @@ def smart_search(
     elif sort_by == "seating_asc":
         order_clause = ' ORDER BY CAST("رقم الجلوس" AS REAL) ASC'
 
+    # البحث للمدارس والإدارات (معطل حالياً من الواجهة بس متأمن هنا)
     if search_type in ["school", "admin"]:
         column_name = '"اسم المدرسة"' if search_type == "school" else '"اسم الادارة"'
-        words = q.split()
-        conditions = []
-        params = []
-        
-        for word in words:
-            conditions.append(f'{column_name} LIKE ?')
-            params.append(f"%{word}%")
-            
-        where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+        # بحث مباشر وسريع بدون تعقيد
+        like_pattern = f"%{q.replace(' ', '%')}%"
+        where_clause = f" WHERE {column_name} LIKE ?"
+        params = [like_pattern]
         
         count_query = f'SELECT COUNT(*) FROM students {where_clause}'
         cursor.execute(count_query, params)
@@ -75,8 +75,7 @@ def smart_search(
             
         offset = (page - 1) * limit
         data_query = f'SELECT * FROM students {where_clause} {order_clause} LIMIT ? OFFSET ?'
-        data_params = params + [limit, offset]
-        cursor.execute(data_query, data_params)
+        cursor.execute(data_query, params + [limit, offset])
         students = cursor.fetchall()
         conn.close()
         
@@ -88,23 +87,22 @@ def smart_search(
             "results": [dict(student) for student in students]
         }
     else:
-        if q.isdigit() and search_type == "student" and sort_by == "highest_total":
-            cursor.execute('SELECT * FROM students WHERE "رقم الجلوس" = ? OR "رقم الجلوس" = ?', (q, int(q)))
+        # 1. لو البحث برقم الجلوس (سريع جداً لأنه بيستخدم Index)
+        if q.isdigit() and search_type == "student":
+            cursor.execute('SELECT * FROM students WHERE "رقم الجلوس" = ?', (int(q),))
             student = cursor.fetchone()
             if student:
                 conn.close()
                 return {"search_type": "seating", "total_results": 1, "total_pages": 1, "current_page": 1, "results": [dict(student)]}
+            else:
+                conn.close()
+                raise HTTPException(status_code=404, detail="No students found")
 
-        words = q.split()
-        word_counts = Counter(words)
-        conditions = []
-        params = []
-        for word, count in word_counts.items():
-            conditions.append('"اسم الطالب" LIKE ?')
-            like_pattern = "%" + "%".join([word] * count) + "%"
-            params.append(like_pattern)
-                
-        where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+        # 2. لو البحث بالاسم (الخوارزمية الجديدة السريعة)
+        # لو كتب "محمد احمد" هتبحث عن أي اسم فيه محمد وبعده احمد في استعلام واحد
+        like_pattern = f"%{q.replace(' ', '%')}%"
+        where_clause = ' WHERE "اسم الطالب" LIKE ?'
+        params = [like_pattern]
         
         count_query = f'SELECT COUNT(*) FROM students {where_clause}'
         cursor.execute(count_query, params)
@@ -116,8 +114,7 @@ def smart_search(
             
         offset = (page - 1) * limit
         data_query = f'SELECT * FROM students {where_clause} {order_clause} LIMIT ? OFFSET ?'
-        data_params = params + [limit, offset]
-        cursor.execute(data_query, data_params)
+        cursor.execute(data_query, params + [limit, offset])
         students = cursor.fetchall()
         conn.close()
         
@@ -136,8 +133,8 @@ def get_ranks(seating_no: int):
     cursor.execute('''
         SELECT gov_rank, admin_rank, school_rank 
         FROM students 
-        WHERE "رقم الجلوس" = ? OR "رقم الجلوس" = ?
-    ''', (seating_no, str(seating_no)))
+        WHERE "رقم الجلوس" = ?
+    ''', (seating_no,))
     
     ranks = cursor.fetchone()
     conn.close()
@@ -183,7 +180,6 @@ def get_general_stats():
     finally:
         conn.close()
 
-# المسار الجديد لإحصائيات مدرسة أو إدارة محددة
 @app.get("/stats/specific")
 def get_specific_stats(entity_type: str, name: str):
     conn = get_db_connection()
